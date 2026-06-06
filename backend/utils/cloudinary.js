@@ -4,9 +4,20 @@ import path from 'path';
 
 // Configure Cloudinary if CLOUDINARY_URL environment variable is provided
 if (process.env.CLOUDINARY_URL) {
-  cloudinary.config({
-    cloudinary_api_url: process.env.CLOUDINARY_URL
-  });
+  const url = process.env.CLOUDINARY_URL;
+  const regex = /cloudinary:\/\/([^:]+):([^@]+)@(.+)/;
+  const matches = url.match(regex);
+  if (matches) {
+    const [, apiKey, apiSecret, cloudName] = matches;
+    cloudinary.config({
+      cloud_name: cloudName,
+      api_key: apiKey,
+      api_secret: apiSecret,
+      secure: true
+    });
+  } else {
+    cloudinary.config();
+  }
 }
 
 /**

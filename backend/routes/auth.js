@@ -19,6 +19,6 @@ router.post('/logout', auth, logoutUser);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 router.get('/me', auth, getMe);
-router.put('/me', auth, updateMe);
+router.put('/me', auth, upload.single('photo'), updateMe);
 
 export default router;

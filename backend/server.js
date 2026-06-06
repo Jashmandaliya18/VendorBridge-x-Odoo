@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
+import fs from 'fs';
 import connectDB from './config/db.js';
 import errorHandler from './middleware/errorHandler.js';
 import authRoutes from './routes/auth.js';
@@ -48,12 +49,19 @@ const seedDefaultUsers = async () => {
   }
 };
 
-connectDB().then(seedDefaultUsers);
+connectDB().then(() => {
+  if (process.env.NODE_ENV !== 'production') {
+    seedDefaultUsers();
+  }
+});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(cors({ origin: [process.env.CLIENT_URL || 'http://localhost:5173'], credentials: true }));
+if (!fs.existsSync('uploads')) {
+  fs.mkdirSync('uploads');
+}
 app.use('/uploads', express.static('uploads'));
 
 app.use('/api/auth', authRoutes);

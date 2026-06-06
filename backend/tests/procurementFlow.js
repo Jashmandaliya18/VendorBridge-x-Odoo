@@ -55,6 +55,15 @@ async function runTests() {
   console.log('\n╔══════════════════════════════════════════════════════════╗');
   console.log('║    VendorBridge x Odoo — Full System Test Suite          ║');
   console.log('╚══════════════════════════════════════════════════════════╝\n');
+  // Safety Guard: Avoid running tests on a production database
+  const dbUri = process.env.MONGO_URI || '';
+  if (
+    process.env.NODE_ENV === 'production' ||
+    (!dbUri.includes('127.0.0.1') && !dbUri.includes('localhost') && !dbUri.includes('vendorbridge_test'))
+  ) {
+    console.error('❌ FATAL: Automated tests are blocked in production or non-test database environments to prevent database wipe!');
+    process.exit(1);
+  }
 
   // ──────────────────────────────
   // SETUP: Fresh database
