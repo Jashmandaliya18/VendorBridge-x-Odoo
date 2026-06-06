@@ -59,10 +59,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(cors({ origin: [process.env.CLIENT_URL || 'http://localhost:5173'], credentials: true }));
-if (!fs.existsSync('uploads')) {
-  fs.mkdirSync('uploads');
+const uploadDir = process.env.VERCEL ? '/tmp' : 'uploads';
+if (!fs.existsSync(uploadDir)) {
+  try {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  } catch (err) {
+    console.warn('Could not create upload directory:', err.message);
+  }
 }
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(uploadDir));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/vendors', vendorRoutes);
