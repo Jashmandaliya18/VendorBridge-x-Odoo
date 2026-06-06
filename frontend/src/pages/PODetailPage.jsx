@@ -139,7 +139,7 @@ const PODetailPage = () => {
             </button>
           )}
 
-          {role === 'vendor' && (
+          {['admin', 'officer', 'manager', 'vendor'].includes(role) && (
             <button 
               disabled={generateInvoiceMutation.isPending}
               onClick={() => generateInvoiceMutation.mutate()} 

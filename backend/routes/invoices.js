@@ -14,7 +14,7 @@ const router = express.Router();
 router.use(auth);
 
 router.get('/', role(['officer', 'admin', 'manager', 'vendor']), getInvoices);
-router.post('/', role(['officer', 'admin', 'vendor']), createInvoice);
+router.post('/', role(['officer', 'admin', 'manager', 'vendor']), createInvoice);
 router.get('/:id', getInvoice);
 router.get('/:id/pdf', role(['officer', 'admin', 'manager', 'vendor']), downloadInvoicePdf);
 router.post('/:id/send-email', role(['officer', 'admin']), sendInvoiceEmail);
