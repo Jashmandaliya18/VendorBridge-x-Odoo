@@ -8,6 +8,7 @@ const VendorSchema = new mongoose.Schema({
   email: { type: String, trim: true },
   address: { type: String, trim: true },
   status: { type: String, enum: ['active', 'pending', 'blocked'], default: 'pending' },
+  rating: { type: Number, default: 0, min: 0, max: 5 },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });
 

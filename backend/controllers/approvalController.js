@@ -3,6 +3,7 @@ import Approval from '../models/Approval.js';
 import Quotation from '../models/Quotation.js';
 import RFQ from '../models/RFQ.js';
 import { logActivity } from '../utils/logActivity.js';
+import { createNotification } from '../utils/createNotification.js';
 
 export const getApprovals = asyncHandler(async (req, res) => {
   const { status } = req.query;
@@ -49,6 +50,37 @@ export const approveRequest = asyncHandler(async (req, res) => {
     if (rfq) rfq.status = 'closed';
     await quotation?.save();
     await rfq?.save();
+
+    // Notify initiator
+    if (approval.initiatedBy) {
+      await createNotification({
+        userId: approval.initiatedBy,
+        title: 'Quotation Fully Approved',
+        message: `Quotation for RFQ ${approval.rfq} has been fully approved.`,
+        type: 'approval',
+        entityId: approval._id
+      });
+    }
+
+    // Notify vendor
+    if (quotation) {
+      await createNotification({
+        userId: quotation.submittedBy,
+        title: 'Quotation Approved',
+        message: `Your quotation for RFQ ${approval.rfq} has been fully approved.`,
+        type: 'quotation',
+        entityId: quotation._id
+      });
+    }
+  } else {
+    // Notify next approver in chain
+    await createNotification({
+      userId: nextLevel.approver,
+      title: 'Quotation Approval Required (Level ' + nextLevel.level + ')',
+      message: `Quotation for RFQ ${approval.rfq} requires your approval.`,
+      type: 'approval',
+      entityId: approval._id
+    });
   }
   await approval.save();
   await logActivity({ eventType: 'approval', description: `Approval level ${current.level} approved`, performedBy: req.user._id, entityId: approval._id, entityType: 'Approval' });
@@ -71,6 +103,30 @@ export const rejectRequest = asyncHandler(async (req, res) => {
   current.actionedAt = new Date();
   approval.status = 'rejected';
   await approval.save();
+
+  // Notify initiator
+  if (approval.initiatedBy) {
+    await createNotification({
+      userId: approval.initiatedBy,
+      title: 'Quotation Approval Rejected',
+      message: `Quotation for RFQ ${approval.rfq} was rejected at Level ${current.level}.`,
+      type: 'approval',
+      entityId: approval._id
+    });
+  }
+
+  // Notify vendor
+  const quotation = await Quotation.findById(approval.quotation);
+  if (quotation) {
+    await createNotification({
+      userId: quotation.submittedBy,
+      title: 'Quotation Approval Rejected',
+      message: `Your quotation for RFQ ${approval.rfq} was rejected during the approval process.`,
+      type: 'quotation',
+      entityId: quotation._id
+    });
+  }
+
   await logActivity({ eventType: 'approval', description: `Approval rejected at level ${current.level}`, performedBy: req.user._id, entityId: approval._id, entityType: 'Approval' });
   res.json(approval);
 });

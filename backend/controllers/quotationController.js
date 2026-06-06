@@ -1,7 +1,10 @@
 import asyncHandler from 'express-async-handler';
 import RFQ from '../models/RFQ.js';
 import Quotation from '../models/Quotation.js';
+import User from '../models/User.js';
+import Approval from '../models/Approval.js';
 import { logActivity } from '../utils/logActivity.js';
+import { createNotification } from '../utils/createNotification.js';
 
 const calculateTotals = (quotation) => {
   const subtotal = quotation.lineItems.reduce((sum, item) => sum + Number(item.total || item.quantity * item.unitPrice), 0);
@@ -91,6 +94,19 @@ export const submitQuotation = asyncHandler(async (req, res) => {
   quotation.submittedAt = new Date();
   calculateTotals(quotation);
   await quotation.save();
+
+  // Notify RFQ creator
+  const rfq = await RFQ.findById(quotation.rfq);
+  if (rfq) {
+    await createNotification({
+      userId: rfq.createdBy,
+      title: 'Quotation Submitted',
+      message: `A new quotation has been submitted for RFQ "${rfq.title}" by vendor.`,
+      type: 'quotation',
+      entityId: quotation._id
+    });
+  }
+
   await logActivity({ eventType: 'quotation', description: `Quotation submitted for RFQ ${quotation.rfq}`, performedBy: req.user._id, entityId: quotation._id, entityType: 'Quotation' });
   res.json(quotation);
 });
@@ -103,6 +119,43 @@ export const selectQuotation = asyncHandler(async (req, res) => {
   }
   quotation.status = 'selected';
   await quotation.save();
+
+  // Create approval document with 2 levels of managers
+  const managers = await User.find({ role: 'manager', status: 'active' }).limit(2);
+  const levels = managers.map((manager, idx) => ({
+    level: idx + 1,
+    approver: manager._id,
+    status: 'pending'
+  }));
+
+  const approval = await Approval.create({
+    rfq: quotation.rfq,
+    quotation: quotation._id,
+    status: 'pending',
+    levels,
+    initiatedBy: req.user._id
+  });
+
+  // Notify first manager in the chain
+  if (managers.length > 0) {
+    await createNotification({
+      userId: managers[0]._id,
+      title: 'Quotation Approval Required',
+      message: `Quotation for RFQ ${quotation.rfq} has been selected and requires your Level 1 approval.`,
+      type: 'approval',
+      entityId: approval._id
+    });
+  }
+
+  // Notify vendor
+  await createNotification({
+    userId: quotation.submittedBy,
+    title: 'Quotation Selected',
+    message: `Your quotation for RFQ ${quotation.rfq} has been selected and is pending approval.`,
+    type: 'quotation',
+    entityId: quotation._id
+  });
+
   await logActivity({ eventType: 'quotation', description: `Quotation selected: ${quotation._id}`, performedBy: req.user._id, entityId: quotation._id, entityType: 'Quotation' });
   res.json(quotation);
 });
@@ -115,6 +168,16 @@ export const rejectQuotation = asyncHandler(async (req, res) => {
   }
   quotation.status = 'rejected';
   await quotation.save();
+
+  // Notify vendor
+  await createNotification({
+    userId: quotation.submittedBy,
+    title: 'Quotation Rejected',
+    message: `Your quotation for RFQ ${quotation.rfq} has been rejected.`,
+    type: 'quotation',
+    entityId: quotation._id
+  });
+
   await logActivity({ eventType: 'quotation', description: `Quotation rejected: ${quotation._id}`, performedBy: req.user._id, entityId: quotation._id, entityType: 'Quotation' });
   res.json(quotation);
 });

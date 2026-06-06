@@ -2,7 +2,9 @@ import asyncHandler from 'express-async-handler';
 import RFQ from '../models/RFQ.js';
 import Vendor from '../models/Vendor.js';
 import Quotation from '../models/Quotation.js';
+import User from '../models/User.js';
 import { logActivity } from '../utils/logActivity.js';
+import { createNotification } from '../utils/createNotification.js';
 
 export const getRFQs = asyncHandler(async (req, res) => {
   const { status, page = 1, limit = 20 } = req.query;
@@ -53,6 +55,23 @@ export const publishRFQ = asyncHandler(async (req, res) => {
   }
   rfq.status = 'published';
   await rfq.save();
+
+  // Create notifications for assigned vendors
+  const vendors = await Vendor.find({ _id: { $in: rfq.vendorIds } });
+  const vendorEmails = vendors.map((v) => v.email).filter(Boolean);
+  if (vendorEmails.length > 0) {
+    const users = await User.find({ email: { $in: vendorEmails }, role: 'vendor' });
+    for (const user of users) {
+      await createNotification({
+        userId: user._id,
+        title: 'New RFQ Assigned',
+        message: `You have been assigned to the new RFQ "${rfq.title}". Please submit your quotation before the deadline.`,
+        type: 'rfq',
+        entityId: rfq._id
+      });
+    }
+  }
+
   await logActivity({ eventType: 'rfq', description: `RFQ published: ${rfq.title}`, performedBy: req.user._id, entityId: rfq._id, entityType: 'RFQ' });
   res.json(rfq);
 });

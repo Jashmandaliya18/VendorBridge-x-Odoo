@@ -12,6 +12,8 @@ const UserSchema = new mongoose.Schema({
   additionalInfo: { type: String },
   photoUrl: { type: String },
   status: { type: String, enum: ['active', 'inactive'], default: 'active' },
+  resetPasswordToken: { type: String },
+  resetPasswordExpire: { type: Date },
 }, { timestamps: true });
 
 UserSchema.pre('save', async function (next) {

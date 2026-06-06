@@ -20,26 +20,28 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-const seedAdminUser = async () => {
+const seedDefaultUsers = async () => {
   try {
     const User = (await import('./models/User.js')).default;
-    const existingUser = await User.findOne({ email: 'admin@vendorbridge.test' });
-    if (!existingUser) {
-      await User.create({
-        firstName: 'Admin',
-        lastName: 'User',
-        email: 'admin@vendorbridge.test',
-        password: 'Password123!',
-        role: 'admin',
-      });
-      console.log('Seeded default admin user: admin@vendorbridge.test / Password123!');
+    const usersToSeed = [
+      { firstName: 'Admin', lastName: 'User', email: 'admin@vendorbridge.test', password: 'Password123!', role: 'admin' },
+      { firstName: 'Procurement', lastName: 'Officer', email: 'officer@vendorbridge.test', password: 'Password123!', role: 'officer' },
+      { firstName: 'Procurement', lastName: 'Manager', email: 'manager@vendorbridge.test', password: 'Password123!', role: 'manager' },
+      { firstName: 'Vendor', lastName: 'User', email: 'vendor@vendorbridge.test', password: 'Password123!', role: 'vendor' },
+    ];
+    for (const u of usersToSeed) {
+      const existingUser = await User.findOne({ email: u.email });
+      if (!existingUser) {
+        await User.create(u);
+        console.log(`Seeded default ${u.role} user: ${u.email} / ${u.password}`);
+      }
     }
   } catch (error) {
-    console.error('Failed to seed default user:', error.message);
+    console.error('Failed to seed default users:', error.message);
   }
 };
 
-connectDB().then(seedAdminUser);
+connectDB().then(seedDefaultUsers);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

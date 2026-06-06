@@ -12,10 +12,17 @@ export const getDashboard = asyncHandler(async (req, res) => {
 
   const activeRFQs = await RFQ.countDocuments({ status: 'published' });
   const overdueInvoices = await Invoice.countDocuments({ status: 'overdue' });
+  
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
 
   if (role === 'admin' || role === 'officer') {
     const pendingApprovals = await Approval.countDocuments({ status: 'pending' });
-    const posResult = await PurchaseOrder.aggregate([{ $group: { _id: null, total: { $sum: '$grandTotal' } } }]);
+    const posResult = await PurchaseOrder.aggregate([
+      { $match: { createdAt: { $gte: startOfMonth } } },
+      { $group: { _id: null, total: { $sum: '$grandTotal' } } }
+    ]);
     const posThisMonth = posResult[0]?.total || 0;
 
     cards.push(
@@ -25,7 +32,7 @@ export const getDashboard = asyncHandler(async (req, res) => {
       { title: 'Overdue Invoices', value: overdueInvoices, description: 'Invoices past due' },
     );
     actions.push(
-      { label: 'Create RFQ', to: '/rfqs' },
+      { label: 'Create RFQ', to: '/rfqs/new' },
       { label: 'Manage Vendors', to: '/vendors' },
       { label: 'Review Quotations', to: '/quotations' },
     );
@@ -60,7 +67,10 @@ export const getDashboard = asyncHandler(async (req, res) => {
     actions.push({ label: 'Manage My Quotations', to: '/quotations' });
   } else {
     const pendingApprovals = await Approval.countDocuments({ status: 'pending' });
-    const posResult = await PurchaseOrder.aggregate([{ $group: { _id: null, total: { $sum: '$grandTotal' } } }]);
+    const posResult = await PurchaseOrder.aggregate([
+      { $match: { createdAt: { $gte: startOfMonth } } },
+      { $group: { _id: null, total: { $sum: '$grandTotal' } } }
+    ]);
     const posThisMonth = posResult[0]?.total || 0;
 
     cards.push(
@@ -72,5 +82,29 @@ export const getDashboard = asyncHandler(async (req, res) => {
     actions.push({ label: 'Review Quotations', to: '/quotations' });
   }
 
-  res.json({ role, cards, actions });
+  // Get recent purchase orders
+  const recentPurchaseOrders = await PurchaseOrder.find()
+    .populate('vendor')
+    .sort({ createdAt: -1 })
+    .limit(5);
+
+  // Get spending trend (last 6 months)
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+  sixMonthsAgo.setDate(1);
+  sixMonthsAgo.setHours(0, 0, 0, 0);
+
+  const spendingTrendData = await Invoice.aggregate([
+    { $match: { createdAt: { $gte: sixMonthsAgo } } },
+    { $group: { _id: { month: { $month: '$createdAt' }, year: { $year: '$createdAt' } }, total: { $sum: '$grandTotal' } } },
+    { $sort: { '_id.year': 1, '_id.month': 1 } },
+  ]);
+
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const spendingTrend = spendingTrendData.map((item) => ({
+    month: `${monthNames[item._id.month - 1]} ${item._id.year.toString().slice(-2)}`,
+    amount: item.total,
+  }));
+
+  res.json({ role, cards, actions, recentPurchaseOrders, spendingTrend });
 });

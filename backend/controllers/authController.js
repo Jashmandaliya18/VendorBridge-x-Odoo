@@ -2,6 +2,7 @@ import asyncHandler from 'express-async-handler';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import User from '../models/User.js';
+import { sendEmail } from '../utils/emailSender.js';
 
 const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '1d' });
 
@@ -57,7 +58,25 @@ export const forgotPassword = asyncHandler(async (req, res) => {
     throw new Error('User not found');
   }
   const token = crypto.randomBytes(20).toString('hex');
-  res.json({ success: true, message: `Password reset token generated: ${token}` });
+  user.resetPasswordToken = token;
+  user.resetPasswordExpire = Date.now() + 3600000; // 1 hour
+  await user.save();
+
+  const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password?token=${token}`;
+  const html = `
+    <h1>Password Reset Request</h1>
+    <p>You requested a password reset for your VendorBridge account. Please click the link below to reset your password:</p>
+    <a href="${resetUrl}" style="background-color: #0D9488; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Reset Password</a>
+    <p>This link is valid for 1 hour. If you did not request this, please ignore this email.</p>
+  `;
+
+  await sendEmail({
+    to: user.email,
+    subject: 'VendorBridge Password Reset',
+    html,
+  });
+
+  res.json({ success: true, message: 'Password reset link sent to email' });
 });
 
 export const resetPassword = asyncHandler(async (req, res) => {
@@ -66,5 +85,21 @@ export const resetPassword = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error('Token and password are required');
   }
-  res.json({ success: true, message: 'Password reset completed' });
+
+  const user = await User.findOne({
+    resetPasswordToken: token,
+    resetPasswordExpire: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    res.status(400);
+    throw new Error('Invalid or expired password reset token');
+  }
+
+  user.password = password;
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpire = undefined;
+  await user.save();
+
+  res.json({ success: true, message: 'Password reset successful' });
 });

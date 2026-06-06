@@ -21,6 +21,8 @@ const QuotationSchema = new mongoose.Schema({
   gstAmount: { type: Number, default: 0 },
   grandTotal: { type: Number, default: 0 },
   notes: { type: String },
+  deliveryDays: { type: Number },
+  paymentTerms: { type: String },
   submittedAt: { type: Date },
 }, { timestamps: true });
 
