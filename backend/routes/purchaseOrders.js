@@ -17,7 +17,7 @@ router.get('/', role(['officer', 'admin', 'manager', 'vendor']), getPurchaseOrde
 router.post('/', role(['officer', 'admin', 'manager']), createPO);
 router.get('/:id', getPO);
 router.patch('/:id/status', role(['officer', 'admin']), updatePOStatus);
-router.get('/:id/pdf', role(['officer', 'admin']), downloadPOPdf);
+router.get('/:id/pdf', role(['officer', 'admin', 'manager', 'vendor']), downloadPOPdf);
 router.post('/:id/send-email', role(['officer', 'admin']), sendPOEmail);
 
 export default router;
