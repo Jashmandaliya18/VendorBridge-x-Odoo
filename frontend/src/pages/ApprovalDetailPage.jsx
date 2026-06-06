@@ -25,7 +25,7 @@ const ApprovalDetailPage = () => {
   });
 
   const approveMutation = useMutation({
-    mutationFn: (remarksData) => approveRequest(id, { remarks: remarksData }),
+    mutationFn: (remarksData) => approveRequest(id, remarksData),
     onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['approval', id] });
       queryClient.invalidateQueries({ queryKey: ['approvals'] });
@@ -48,7 +48,7 @@ const ApprovalDetailPage = () => {
   });
 
   const rejectMutation = useMutation({
-    mutationFn: (remarksData) => rejectRequest(id, { remarks: remarksData }),
+    mutationFn: (remarksData) => rejectRequest(id, remarksData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['approval', id] });
       queryClient.invalidateQueries({ queryKey: ['approvals'] });
