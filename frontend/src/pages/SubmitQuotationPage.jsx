@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getRFQ } from '../api/rfqs.js';
@@ -20,14 +20,19 @@ const SubmitQuotationPage = () => {
   const [paymentTerms, setPaymentTerms] = useState('Net 30');
   const [deliveryDays, setDeliveryDays] = useState(7);
   const [lineItems, setLineItems] = useState([]);
+  const [loadedRfqId, setLoadedRfqId] = useState(null);
 
-  // Fetch RFQ Details and pre-fill line items
+  // Fetch RFQ Details
   const { data: rfq, isLoading: rfqLoading } = useQuery({
     queryKey: ['rfq', rfqId],
-    queryFn: () => getRFQ(rfqId).then(r => {
-      const rfqData = r.data;
+    queryFn: () => getRFQ(rfqId).then(r => r.data),
+  });
+
+  // Pre-fill line items when RFQ details are loaded
+  useEffect(() => {
+    if (rfq && rfq._id === rfqId && loadedRfqId !== rfqId) {
       setLineItems(
-        rfqData.lineItems.map((item, idx) => ({
+        rfq.lineItems.map((item, idx) => ({
           rfqLineItemIndex: idx,
           itemName: item.itemName,
           quantity: item.quantity,
@@ -37,9 +42,9 @@ const SubmitQuotationPage = () => {
           total: 0,
         }))
       );
-      return rfqData;
-    }),
-  });
+      setLoadedRfqId(rfqId);
+    }
+  }, [rfq, rfqId, loadedRfqId]);
 
   // Fetch this vendor user's linked Vendor record via the new /my-profile endpoint
   const { data: vendorProfile, isLoading: vendorLoading, error: vendorError } = useQuery({
