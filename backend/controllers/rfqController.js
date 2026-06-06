@@ -9,7 +9,14 @@ import { createNotification } from '../utils/createNotification.js';
 export const getRFQs = asyncHandler(async (req, res) => {
   const { status, page = 1, limit = 20 } = req.query;
   const filter = {};
-  if (status) filter.status = status;
+  
+  // Vendors can only see published RFQs
+  if (req.user.role === 'vendor') {
+    filter.status = 'published';
+  } else if (status) {
+    filter.status = status;
+  }
+
   const rfqs = await RFQ.find(filter)
     .populate('vendorIds')
     .skip((page - 1) * limit)

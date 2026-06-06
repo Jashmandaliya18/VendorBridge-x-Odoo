@@ -24,40 +24,125 @@ import ActivityLogsPage from './pages/ActivityLogsPage.jsx';
 import Layout from './components/Layout.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 
+// Role constants for readability
+const ADMIN_ONLY = ['admin'];
+const ADMIN_OFFICER = ['admin', 'officer'];
+const ADMIN_OFFICER_MANAGER = ['admin', 'officer', 'manager'];
+const NON_VENDOR = ['admin', 'officer', 'manager'];
+const ALL_ROLES = ['admin', 'officer', 'manager', 'vendor'];
+
 function App() {
   return (
     <Routes>
+      {/* Public routes */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+      {/* Protected layout */}
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+        {/* Dashboard - all roles, but shows role-specific content */}
         <Route index element={<DashboardPage />} />
-        
-        <Route path="vendors" element={<VendorsPage />} />
-        <Route path="vendors/:id" element={<VendorDetailPage />} />
-        
+
+        {/* Vendors - admin, officer, manager can view; admin/officer can create */}
+        <Route
+          path="vendors"
+          element={
+            <ProtectedRoute allowedRoles={NON_VENDOR}>
+              <VendorsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="vendors/:id"
+          element={
+            <ProtectedRoute allowedRoles={NON_VENDOR}>
+              <VendorDetailPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* RFQs - all roles can view, officers/admins can create */}
         <Route path="rfqs" element={<RFQsPage />} />
-        <Route path="rfqs/new" element={<CreateRFQPage />} />
+        <Route
+          path="rfqs/new"
+          element={
+            <ProtectedRoute allowedRoles={ADMIN_OFFICER}>
+              <CreateRFQPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="rfqs/:id" element={<RFQDetailPage />} />
-        <Route path="rfqs/:id/compare" element={<QuotationComparisonPage />} />
-        
+        <Route
+          path="rfqs/:id/compare"
+          element={
+            <ProtectedRoute allowedRoles={ADMIN_OFFICER_MANAGER}>
+              <QuotationComparisonPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Quotations */}
         <Route path="quotations" element={<QuotationsPage />} />
         <Route path="quotations/:id" element={<QuotationDetailPage />} />
-        <Route path="quotations/submit/:rfqId" element={<SubmitQuotationPage />} />
-        
-        <Route path="approvals" element={<ApprovalsPage />} />
-        <Route path="approvals/:id" element={<ApprovalDetailPage />} />
-        
+        <Route
+          path="quotations/submit/:rfqId"
+          element={
+            <ProtectedRoute allowedRoles={['vendor']}>
+              <SubmitQuotationPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Approvals - admin, officer, manager */}
+        <Route
+          path="approvals"
+          element={
+            <ProtectedRoute allowedRoles={NON_VENDOR}>
+              <ApprovalsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="approvals/:id"
+          element={
+            <ProtectedRoute allowedRoles={NON_VENDOR}>
+              <ApprovalDetailPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Purchase Orders - all roles (vendor sees their own) */}
         <Route path="purchase-orders" element={<PurchaseOrdersPage />} />
         <Route path="purchase-orders/:id" element={<PODetailPage />} />
-        
+
+        {/* Invoices - all roles (vendor sees their own) */}
         <Route path="invoices" element={<InvoicesPage />} />
         <Route path="invoices/:id" element={<InvoiceDetailPage />} />
-        
-        <Route path="reports" element={<ReportsPage />} />
-        <Route path="activity" element={<ActivityLogsPage />} />
+
+        {/* Reports - admin, officer, manager */}
+        <Route
+          path="reports"
+          element={
+            <ProtectedRoute allowedRoles={NON_VENDOR}>
+              <ReportsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Activity Logs - admin, officer, manager */}
+        <Route
+          path="activity"
+          element={
+            <ProtectedRoute allowedRoles={NON_VENDOR}>
+              <ActivityLogsPage />
+            </ProtectedRoute>
+          }
+        />
       </Route>
+
+      {/* Catch-all: redirect to login */}
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );

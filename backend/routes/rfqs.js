@@ -18,9 +18,9 @@ import upload from '../middleware/upload.js';
 const router = express.Router();
 router.use(auth);
 
-router.get('/', role(['officer', 'manager', 'admin']), getRFQs);
+router.get('/', role(['vendor', 'officer', 'manager', 'admin']), getRFQs);
 router.post('/', role(['officer', 'admin']), createRFQ);
-router.get('/:id', getRFQ);
+router.get('/:id', role(['vendor', 'officer', 'manager', 'admin']), getRFQ);
 router.put('/:id', role(['officer', 'admin']), updateRFQ);
 router.patch('/:id/publish', role(['officer', 'admin']), publishRFQ);
 router.patch('/:id/close', role(['officer', 'admin']), closeRFQ);

@@ -6,7 +6,8 @@
   "main": "server.js",
   "scripts": {
     "dev": "nodemon server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "test:flow": "node tests/procurementFlow.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

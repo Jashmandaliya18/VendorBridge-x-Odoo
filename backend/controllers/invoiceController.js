@@ -98,7 +98,23 @@ export const markInvoicePaid = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error('Invoice not found');
   }
+  if (invoice.status === 'paid') {
+    res.status(400);
+    throw new Error('Invoice is already marked as paid');
+  }
   invoice.status = 'paid';
+  invoice.paidAt = new Date();
   await invoice.save();
+  await logActivity({
+    eventType: 'invoice',
+    description: `Invoice marked as paid: ${invoice.invoiceNumber}`,
+    performedBy: req.user._id,
+    entityId: invoice._id,
+    entityType: 'Invoice'
+  });
+
+  // Update PO status to completed
+  await PurchaseOrder.findByIdAndUpdate(invoice.purchaseOrder, { status: 'completed' });
+
   res.json(invoice);
 });

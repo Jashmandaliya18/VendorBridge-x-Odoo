@@ -9,14 +9,20 @@ import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import DataTable from '../components/DataTable.jsx';
 import Skeleton from '../components/Skeleton.jsx';
 import { toast } from 'react-toastify';
+import { useAuth } from '../context/AuthContext.jsx';
 
 const VendorDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [confirmStatusOpen, setConfirmStatusOpen] = useState(false);
+  const [targetStatus, setTargetStatus] = useState('');
+
   
   const [form, setForm] = useState({
     name: '',
@@ -64,7 +70,7 @@ const VendorDetailPage = () => {
   });
 
   const statusMutation = useMutation({
-    mutationFn: (status) => updateVendorStatus(id, { status }),
+    mutationFn: (status) => updateVendorStatus(id, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vendor', id] });
       queryClient.invalidateQueries({ queryKey: ['vendors'] });
@@ -92,9 +98,8 @@ const VendorDetailPage = () => {
     updateMutation.mutate(form);
   };
 
-  const handleStatusToggle = () => {
-    const nextStatus = vendor?.status === 'blocked' ? 'active' : 'blocked';
-    statusMutation.mutate(nextStatus);
+  const handleStatusChange = () => {
+    statusMutation.mutate(targetStatus);
   };
 
   const columns = [
@@ -155,48 +160,80 @@ const VendorDetailPage = () => {
         </div>
         
         <div className="flex items-center space-x-3.5 self-start sm:self-center">
-          <button 
-            onClick={() => setIsEditOpen(true)} 
-            className="btn-outline flex items-center space-x-2 py-2"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-            <span>Edit Profile</span>
-          </button>
-          <button 
-            onClick={() => setConfirmStatusOpen(true)} 
-            className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl font-medium transition-all duration-200 shadow-sm active:scale-[0.98] ${
-              vendor.status === 'blocked'
-                ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/10'
-                : 'bg-amber-600 hover:bg-amber-700 text-white shadow-amber-600/10'
-            }`}
-          >
-            {vendor.status === 'blocked' ? (
-              <>
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          {['admin', 'officer'].includes(user?.role) && (
+            <button 
+              onClick={() => setIsEditOpen(true)} 
+              className="btn-outline flex items-center space-x-2 py-2"
+            >
+              <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              <span>Edit Profile</span>
+            </button>
+          )}
+          {isAdmin && (
+            <>
+              {vendor.status === 'pending' ? (
+                <>
+                  <button 
+                    onClick={() => { setTargetStatus('active'); setConfirmStatusOpen(true); }}
+                    className="flex items-center space-x-2 px-5 py-2.5 rounded-xl font-medium transition-all duration-200 shadow-sm active:scale-[0.98] bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/10"
+                  >
+                    <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    <span>Approve Partner</span>
+                  </button>
+                  <button 
+                    onClick={() => { setTargetStatus('blocked'); setConfirmStatusOpen(true); }}
+                    className="flex items-center space-x-2 px-5 py-2.5 rounded-xl font-medium transition-all duration-200 shadow-sm active:scale-[0.98] bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/10"
+                  >
+                    <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <span>Reject Partner</span>
+                  </button>
+                </>
+              ) : (
+                <button 
+                  onClick={() => {
+                    setTargetStatus(vendor.status === 'blocked' ? 'active' : 'blocked');
+                    setConfirmStatusOpen(true);
+                  }} 
+                  className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl font-medium transition-all duration-200 shadow-sm active:scale-[0.98] ${
+                    vendor.status === 'blocked'
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/10'
+                      : 'bg-amber-600 hover:bg-amber-700 text-white shadow-amber-600/10'
+                  }`}
+                >
+                  {vendor.status === 'blocked' ? (
+                    <>
+                      <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                      <span>Activate Partner</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                      <span>Block Partner</span>
+                    </>
+                  )}
+                </button>
+              )}
+              <button 
+                onClick={() => setConfirmDeleteOpen(true)} 
+                className="btn-danger flex items-center space-x-2 py-2"
+              >
+                <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
-                <span>Activate Partner</span>
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-                <span>Block Partner</span>
-              </>
-            )}
-          </button>
-          <button 
-            onClick={() => setConfirmDeleteOpen(true)} 
-            className="btn-danger flex items-center space-x-2 py-2"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-            <span>Delete</span>
-          </button>
+                <span>Delete</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -355,15 +392,15 @@ const VendorDetailPage = () => {
         confirmLabel="Delete Partner"
       />
 
-      {/* Status Toggle Confirmation */}
+      {/* Status Confirmation */}
       <ConfirmDialog
         isOpen={confirmStatusOpen}
         onClose={() => setConfirmStatusOpen(false)}
-        onConfirm={handleStatusToggle}
-        title={vendor.status === 'blocked' ? "Activate Vendor" : "Block Vendor"}
-        message={`Are you sure you want to ${vendor.status === 'blocked' ? 'activate' : 'block'} ${vendor.name}?`}
-        type={vendor.status === 'blocked' ? 'teal' : 'danger'}
-        confirmLabel={vendor.status === 'blocked' ? "Activate Partner" : "Block Partner"}
+        onConfirm={handleStatusChange}
+        title={targetStatus === 'active' ? (vendor.status === 'pending' ? "Approve Vendor" : "Activate Vendor") : (vendor.status === 'pending' ? "Reject Vendor" : "Block Vendor")}
+        message={`Are you sure you want to ${targetStatus === 'active' ? (vendor.status === 'pending' ? 'approve' : 'activate') : (vendor.status === 'pending' ? 'reject' : 'block')} ${vendor.name}?`}
+        type={targetStatus === 'active' ? 'teal' : 'danger'}
+        confirmLabel={targetStatus === 'active' ? (vendor.status === 'pending' ? "Approve Partner" : "Activate Partner") : (vendor.status === 'pending' ? "Reject Partner" : "Block Partner")}
       />
     </div>
   );

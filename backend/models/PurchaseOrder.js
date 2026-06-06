@@ -19,7 +19,7 @@ const POSchema = new mongoose.Schema({
   cgst: { type: Number, default: 0 },
   sgst: { type: Number, default: 0 },
   grandTotal: { type: Number, default: 0 },
-  status: { type: String, enum: ['draft', 'pending_payment', 'paid', 'cancelled'], default: 'pending_payment' },
+  status: { type: String, enum: ['draft', 'pending_payment', 'paid', 'completed', 'cancelled'], default: 'pending_payment' },
   billTo: {
     name: { type: String },
     address: { type: String },
