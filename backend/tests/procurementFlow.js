@@ -10,6 +10,7 @@ process.env.PORT = '5001';
 process.env.MONGO_URI = 'mongodb://127.0.0.1:27017/vendorbridge_test';
 process.env.JWT_SECRET = 'supersecretkeyforvendorbridgetestsuite';
 process.env.JWT_EXPIRES_IN = '1d';
+process.env.NODE_ENV = 'test';
 
 const BASE_URL = 'http://localhost:5001/api';
 
