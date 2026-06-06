@@ -26,15 +26,16 @@ const ApprovalDetailPage = () => {
 
   const approveMutation = useMutation({
     mutationFn: (remarksData) => approveRequest(id, remarksData),
-    onSuccess: async (data) => {
+    onSuccess: async (response) => {
       queryClient.invalidateQueries({ queryKey: ['approval', id] });
       queryClient.invalidateQueries({ queryKey: ['approvals'] });
       toast.success('Request approved successfully!');
       
+      const approvalData = response.data;
       // If workflow fully approved, automatically generate PO
-      if (data.status === 'approved') {
+      if (approvalData && approvalData.status === 'approved') {
         try {
-          await createPO({ quotationId: data.quotation?._id || data.quotation });
+          await createPO({ quotationId: approvalData.quotation?._id || approvalData.quotation });
           toast.success('Purchase Order generated automatically!');
         } catch (err) {
           // Silent catch in production

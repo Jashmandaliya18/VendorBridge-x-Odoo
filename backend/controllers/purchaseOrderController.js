@@ -7,7 +7,14 @@ import { logActivity } from '../utils/logActivity.js';
 import { sendEmail } from '../utils/emailSender.js';
 
 export const getPurchaseOrders = asyncHandler(async (req, res) => {
-  const orders = await PurchaseOrder.find().populate('quotation rfq vendor createdBy');
+  const filter = {};
+  if (req.user.role === 'vendor') {
+    const Quotation = (await import('../models/Quotation.js')).default;
+    const vendorQuotations = await Quotation.find({ submittedBy: req.user._id }).select('_id');
+    const quotationIds = vendorQuotations.map((q) => q._id);
+    filter.quotation = { $in: quotationIds };
+  }
+  const orders = await PurchaseOrder.find(filter).populate('quotation rfq vendor createdBy');
   res.json(orders);
 });
 

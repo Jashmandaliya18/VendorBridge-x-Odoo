@@ -7,7 +7,19 @@ import { logActivity } from '../utils/logActivity.js';
 import { sendEmail } from '../utils/emailSender.js';
 
 export const getInvoices = asyncHandler(async (req, res) => {
-  const invoices = await Invoice.find().populate('purchaseOrder rfq vendor');
+  const filter = {};
+  if (req.user.role === 'vendor') {
+    const Quotation = (await import('../models/Quotation.js')).default;
+    const vendorQuotations = await Quotation.find({ submittedBy: req.user._id }).select('_id');
+    const quotationIds = vendorQuotations.map((q) => q._id);
+    
+    const PurchaseOrder = (await import('../models/PurchaseOrder.js')).default;
+    const vendorPOs = await PurchaseOrder.find({ quotation: { $in: quotationIds } }).select('_id');
+    const poIds = vendorPOs.map((po) => po._id);
+    
+    filter.purchaseOrder = { $in: poIds };
+  }
+  const invoices = await Invoice.find(filter).populate('purchaseOrder rfq vendor');
   res.json(invoices);
 });
 

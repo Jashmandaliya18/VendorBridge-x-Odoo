@@ -13,8 +13,8 @@ import {
 const router = express.Router();
 router.use(auth);
 
-router.get('/', role(['officer', 'admin', 'manager']), getPurchaseOrders);
-router.post('/', role(['officer', 'admin']), createPO);
+router.get('/', role(['officer', 'admin', 'manager', 'vendor']), getPurchaseOrders);
+router.post('/', role(['officer', 'admin', 'manager']), createPO);
 router.get('/:id', getPO);
 router.patch('/:id/status', role(['officer', 'admin']), updatePOStatus);
 router.get('/:id/pdf', role(['officer', 'admin']), downloadPOPdf);

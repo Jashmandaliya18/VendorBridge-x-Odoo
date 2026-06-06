@@ -13,10 +13,10 @@ import {
 const router = express.Router();
 router.use(auth);
 
-router.get('/', role(['officer', 'admin']), getInvoices);
-router.post('/', role(['officer', 'admin']), createInvoice);
+router.get('/', role(['officer', 'admin', 'vendor']), getInvoices);
+router.post('/', role(['officer', 'admin', 'vendor']), createInvoice);
 router.get('/:id', getInvoice);
-router.get('/:id/pdf', role(['officer', 'admin']), downloadInvoicePdf);
+router.get('/:id/pdf', role(['officer', 'admin', 'vendor']), downloadInvoicePdf);
 router.post('/:id/send-email', role(['officer', 'admin']), sendInvoiceEmail);
 router.patch('/:id/mark-paid', role(['officer', 'admin']), markInvoicePaid);
 
