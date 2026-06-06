@@ -5,6 +5,7 @@ import Quotation from '../models/Quotation.js';
 import User from '../models/User.js';
 import { logActivity } from '../utils/logActivity.js';
 import { createNotification } from '../utils/createNotification.js';
+import { uploadToCloudinary } from '../utils/cloudinary.js';
 
 export const getRFQs = asyncHandler(async (req, res) => {
   const { status, page = 1, limit = 20 } = req.query;
@@ -115,7 +116,8 @@ export const uploadRFQAttachment = asyncHandler(async (req, res) => {
     throw new Error('RFQ not found');
   }
   if (req.file) {
-    rfq.attachments.push(`/uploads/${req.file.filename}`);
+    const fileUrl = await uploadToCloudinary(req.file.path, 'rfqs');
+    rfq.attachments.push(fileUrl);
     await rfq.save();
   }
   res.json(rfq);

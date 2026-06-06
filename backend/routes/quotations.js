@@ -9,6 +9,7 @@ import {
   submitQuotation,
   selectQuotation,
   rejectQuotation,
+  downloadQuotationPdf,
 } from '../controllers/quotationController.js';
 
 const router = express.Router();
@@ -17,6 +18,7 @@ router.use(auth);
 router.get('/', role(['officer', 'manager', 'admin', 'vendor']), getQuotations);
 router.post('/', role(['vendor']), createQuotation);
 router.get('/:id', role(['officer', 'manager', 'admin', 'vendor']), getQuotation);
+router.get('/:id/pdf', role(['officer', 'manager', 'admin', 'vendor']), downloadQuotationPdf);
 router.put('/:id', role(['vendor']), updateQuotation);
 router.patch('/:id/submit', role(['vendor']), submitQuotation);
 router.patch('/:id/select', role(['officer', 'admin']), selectQuotation);

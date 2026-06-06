@@ -24,7 +24,7 @@ const seedDefaultUsers = async () => {
   try {
     const User = (await import('./models/User.js')).default;
     const usersToSeed = [
-      { firstName: 'Admin', lastName: 'User', email: 'admin@vendorbridge.test', password: 'Password123!', role: 'admin' },
+      { firstName: 'Admin', lastName: 'User', email: 'admin@vendorbridge.test', password: 'AdminBridge@12345', role: 'admin' },
       { firstName: 'Procurement', lastName: 'Officer', email: 'officer@vendorbridge.test', password: 'Password123!', role: 'officer' },
       { firstName: 'Procurement', lastName: 'Manager', email: 'manager@vendorbridge.test', password: 'Password123!', role: 'manager' },
       { firstName: 'Vendor', lastName: 'User', email: 'vendor@vendorbridge.test', password: 'Password123!', role: 'vendor' },
@@ -33,7 +33,14 @@ const seedDefaultUsers = async () => {
       const existingUser = await User.findOne({ email: u.email });
       if (!existingUser) {
         await User.create(u);
-        console.log(`Seeded default ${u.role} user: ${u.email} / ${u.password}`);
+        console.log(`Seeded default ${u.role} user account.`);
+      } else {
+        const isMatch = await existingUser.matchPassword(u.password);
+        if (!isMatch) {
+          existingUser.password = u.password;
+          await existingUser.save();
+          console.log(`Updated default ${u.role} user account password.`);
+        }
       }
     }
   } catch (error) {
@@ -46,7 +53,7 @@ connectDB().then(seedDefaultUsers);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(cors({ origin: [process.env.CLIENT_URL || 'http://localhost:5173', 'http://localhost:5174'], credentials: true }));
+app.use(cors({ origin: [process.env.CLIENT_URL || 'http://localhost:5173'], credentials: true }));
 app.use('/uploads', express.static('uploads'));
 
 app.use('/api/auth', authRoutes);

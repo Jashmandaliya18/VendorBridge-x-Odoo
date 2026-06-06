@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import User from '../models/User.js';
 import { sendEmail } from '../utils/emailSender.js';
+import { uploadToCloudinary } from '../utils/cloudinary.js';
 
 const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '1d' });
 
@@ -13,7 +14,7 @@ export const registerUser = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error('Email already registered');
   }
-  const photoUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
+  const photoUrl = req.file ? await uploadToCloudinary(req.file.path, 'users') : undefined;
   const user = await User.create({ firstName, lastName, email, password, phone, role, country, additionalInfo, photoUrl });
   res.status(201).json({ accessToken: generateToken(user._id), user: { _id: user._id, firstName, lastName, email, role, photoUrl } });
 });
@@ -45,7 +46,7 @@ export const updateMe = asyncHandler(async (req, res) => {
   const updates = ['firstName', 'lastName', 'phone', 'country', 'additionalInfo'];
   updates.forEach((field) => { if (req.body[field] !== undefined) user[field] = req.body[field]; });
   if (req.body.password) user.password = req.body.password;
-  if (req.file) user.photoUrl = `/uploads/${req.file.filename}`;
+  if (req.file) user.photoUrl = await uploadToCloudinary(req.file.path, 'users');
   await user.save();
   res.json({ success: true, user });
 });

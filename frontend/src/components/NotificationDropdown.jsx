@@ -13,7 +13,7 @@ const NotificationDropdown = () => {
       const response = await getNotifications();
       setNotifications(response.data || []);
     } catch (err) {
-      console.error('Failed to fetch notifications:', err);
+      // Silent error handling in production
     }
   };
 
@@ -41,7 +41,7 @@ const NotificationDropdown = () => {
       await markNotificationRead(id);
       setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
     } catch (err) {
-      console.error(err);
+      // Silent error handling in production
     }
   };
 
@@ -50,7 +50,7 @@ const NotificationDropdown = () => {
       await markAllRead();
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     } catch (err) {
-      console.error(err);
+      // Silent error handling in production
     }
   };
 
@@ -60,7 +60,7 @@ const NotificationDropdown = () => {
         await markNotificationRead(n._id);
         setNotifications(prev => prev.map(item => item._id === n._id ? { ...item, read: true } : item));
       } catch (err) {
-        console.error(err);
+        // Silent error handling in production
       }
     }
     setIsOpen(false);

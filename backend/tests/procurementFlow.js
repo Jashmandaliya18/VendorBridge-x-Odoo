@@ -115,7 +115,7 @@ async function runTests() {
   try {
     const r = await apiRequest('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email: 'admin@vendorbridge.test', password: 'Password123!' })
+      body: JSON.stringify({ email: 'admin@vendorbridge.test', password: 'AdminBridge@12345' })
     });
     adminToken = r.data.accessToken;
     assert.ok(adminToken, 'Admin token should be returned');

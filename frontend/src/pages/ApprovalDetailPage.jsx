@@ -37,7 +37,7 @@ const ApprovalDetailPage = () => {
           await createPO({ quotationId: data.quotation?._id || data.quotation });
           toast.success('Purchase Order generated automatically!');
         } catch (err) {
-          console.error('Failed to auto-create PO:', err);
+          // Silent catch in production
         }
       }
       navigate('/approvals');

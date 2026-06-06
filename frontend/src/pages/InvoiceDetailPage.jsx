@@ -55,7 +55,6 @@ const InvoiceDetailPage = () => {
       link.click();
       toast.success('PDF download started');
     } catch (err) {
-      console.error(err);
       toast.error('Failed to download PDF');
     }
   };

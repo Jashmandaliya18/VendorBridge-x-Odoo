@@ -38,7 +38,6 @@ const ReportsPage = () => {
       link.click();
       toast.success(`${format.toUpperCase()} export downloaded`);
     } catch (err) {
-      console.error(err);
       toast.error('Failed to export report');
     }
   };

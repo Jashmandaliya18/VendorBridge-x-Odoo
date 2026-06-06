@@ -5,6 +5,7 @@ import User from '../models/User.js';
 import Approval from '../models/Approval.js';
 import { logActivity } from '../utils/logActivity.js';
 import { createNotification } from '../utils/createNotification.js';
+import { generateQuotationPDF } from '../utils/pdfGenerator.js';
 
 const calculateTotals = (quotation) => {
   const subtotal = quotation.lineItems.reduce((sum, item) => sum + Number(item.total || item.quantity * item.unitPrice), 0);
@@ -180,4 +181,25 @@ export const rejectQuotation = asyncHandler(async (req, res) => {
 
   await logActivity({ eventType: 'quotation', description: `Quotation rejected: ${quotation._id}`, performedBy: req.user._id, entityId: quotation._id, entityType: 'Quotation' });
   res.json(quotation);
+});
+
+export const downloadQuotationPdf = asyncHandler(async (req, res) => {
+  const quotation = await Quotation.findById(req.params.id).populate('vendor submittedBy rfq');
+  if (!quotation) {
+    res.status(404);
+    throw new Error('Quotation not found');
+  }
+
+  // Authorization check
+  if (req.user.role === 'vendor' && !quotation.submittedBy.equals(req.user._id)) {
+    res.status(403);
+    throw new Error('Not authorized to access this quotation');
+  }
+
+  const pdf = await generateQuotationPDF(quotation);
+  res.set({
+    'Content-Type': 'application/pdf',
+    'Content-Disposition': `attachment; filename=Quotation-${quotation._id.toString().slice(-6).toUpperCase()}.pdf`
+  });
+  res.send(pdf);
 });
