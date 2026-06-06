@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { loginUser } from '../api/auth.js';
-import { setAuthToken } from '../api/client.js';
+import { useAuth } from '../context/AuthContext.jsx';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -13,8 +14,7 @@ const LoginPage = () => {
     event.preventDefault();
     try {
       const { data } = await loginUser({ email, password });
-      localStorage.setItem('vendorbridge_token', data.accessToken);
-      setAuthToken(data.accessToken);
+      login(data.user, data.accessToken);
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.message || 'Unable to login');

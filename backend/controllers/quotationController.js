@@ -15,9 +15,16 @@ const calculateTotals = (quotation) => {
 export const getQuotations = asyncHandler(async (req, res) => {
   const { rfqId, vendorId, status } = req.query;
   const filter = {};
-  if (rfqId) filter.rfq = rfqId;
-  if (vendorId) filter.vendor = vendorId;
+
+  if (req.user.role === 'vendor') {
+    filter.submittedBy = req.user._id;
+  } else {
+    if (rfqId) filter.rfq = rfqId;
+    if (vendorId) filter.vendor = vendorId;
+  }
+
   if (status) filter.status = status;
+
   const quotations = await Quotation.find(filter).populate('rfq vendor submittedBy');
   res.json(quotations);
 });
@@ -36,6 +43,12 @@ export const getQuotation = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error('Quotation not found');
   }
+
+  if (req.user.role === 'vendor' && !quotation.submittedBy.equals(req.user._id)) {
+    res.status(403);
+    throw new Error('Not authorized to view this quotation');
+  }
+
   res.json(quotation);
 });
 
@@ -45,10 +58,17 @@ export const updateQuotation = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error('Quotation not found');
   }
+
+  if (!quotation.submittedBy.equals(req.user._id)) {
+    res.status(403);
+    throw new Error('Not authorized to update this quotation');
+  }
+
   if (quotation.status !== 'draft') {
     res.status(400);
     throw new Error('Only drafts can be updated');
   }
+
   Object.assign(quotation, req.body);
   calculateTotals(quotation);
   await quotation.save();
@@ -61,6 +81,12 @@ export const submitQuotation = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error('Quotation not found');
   }
+
+  if (!quotation.submittedBy.equals(req.user._id)) {
+    res.status(403);
+    throw new Error('Not authorized to submit this quotation');
+  }
+
   quotation.status = 'submitted';
   quotation.submittedAt = new Date();
   calculateTotals(quotation);

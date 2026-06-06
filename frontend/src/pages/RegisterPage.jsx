@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { registerUser } from '../api/auth.js';
-import { setAuthToken } from '../api/client.js';
+import { useAuth } from '../context/AuthContext.jsx';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', role: 'vendor' });
   const [error, setError] = useState('');
 
@@ -19,8 +20,7 @@ const RegisterPage = () => {
       const formData = new FormData();
       Object.entries(form).forEach(([key, value]) => formData.append(key, value));
       const { data } = await registerUser(formData);
-      localStorage.setItem('vendorbridge_token', data.accessToken);
-      setAuthToken(data.accessToken);
+      login(data.user, data.accessToken);
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.message || 'Unable to register');
