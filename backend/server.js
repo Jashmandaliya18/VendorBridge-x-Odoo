@@ -89,3 +89,5 @@ server.on('error', (err) => {
   }
   process.exit(1);
 });
+
+export default app;
